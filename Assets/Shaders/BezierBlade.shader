@@ -145,7 +145,7 @@ Shader "Tutorial204/BezierBlade"
             {
                 // Calculate normal
                 float3 n = isFrontFace ? normalize(i.curvedNorm) : -reflect(-normalize(i.curvedNorm), normalize(i.originalNorm));
-                return half4(n, 1);
+                //return half4(n, 1);
                 Light mainLight = GetMainLight(TransformWorldToShadowCoord(i.positionWS));
                 float3 v = normalize(GetCameraPositionWS() - i.positionWS);
 
