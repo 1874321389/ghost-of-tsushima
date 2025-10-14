@@ -7,13 +7,13 @@ Shader "Tutorial204/BezierBlade"
         _Tilt ("Tilt", Float) = 0.9
         _BladeWidth ("BladeWidth", Float) = 0.1
         _TaperAmount ("Taper Amount", Float) = 0
-        _CurvedNormalAmount ("Curved Normal Amount", Range(0, 5)) = 1
+        _CurvedNormalAmount ("Curved Normal Amount", Range(0, 20)) = 1
         _p1Offset ("p1Offset", Float) = 1
         _p2Offset ("p2Offset", Float) = 1
 
         [Header(Shading)]
         _TopColor ("Top Color", Color) = (.25, .5, .5, 1)
-        _BottomColor ("Bottom Color", Color) = (.25, .5, .5, 1)
+        _BottomColor ("Bottom Color", Color) = (.25, .5, .5, 1) 
         _GrassAlbedo ("Grass albedo", 2D) = "white" {}
         _GrassGloss ("Grass gloss", 2D) = "white" {}
     }
@@ -57,10 +57,13 @@ Shader "Tutorial204/BezierBlade"
             float4 _TopColor;
             float4 _BottomColor;
 
+            //启用tilling和offset
             TEXTURE2D(_GrassAlbedo);
             SAMPLER(sampler_GrassAlbedo);
             TEXTURE2D(_GrassGloss);
             SAMPLER(sampler_GrassGloss);
+            float4 _GrassAlbedo_ST;
+            float4 _GrassGloss_ST;
 
 
 
@@ -149,15 +152,20 @@ Shader "Tutorial204/BezierBlade"
                 Light mainLight = GetMainLight(TransformWorldToShadowCoord(i.positionWS));
                 float3 v = normalize(GetCameraPositionWS() - i.positionWS);
 
-                float3 grassAlbedo = saturate(SAMPLE_TEXTURE2D(_GrassAlbedo, sampler_GrassAlbedo, i.uv));
+                float2 uvAlbedo = i.uv * _GrassAlbedo_ST.xy + _GrassAlbedo_ST.zw;
+                float3 grassAlbedo = saturate(SAMPLE_TEXTURE2D(_GrassAlbedo, sampler_GrassAlbedo, uvAlbedo));
+
 
                 float4 grassCol = lerp(_BottomColor, _TopColor, i.t);
 
                 float3 albedo = grassCol.rgb * grassAlbedo;
+                //return half4(albedo, 1);
 
-                float gloss = (1 - SAMPLE_TEXTURE2D(_GrassGloss, sampler_GrassGloss, i.uv).r) * 0.2;
+                float2 uvGloss = i.uv * _GrassGloss_ST.xy + _GrassGloss_ST.zw;
+                float gloss = (1 - SAMPLE_TEXTURE2D(_GrassGloss, sampler_GrassGloss, uvGloss).r) * 0.2;
 
                 half3 GI = SampleSH(n);
+                //return half4(GI, 1);
 
                 BRDFData brdfData;
                 half alpha = 1;

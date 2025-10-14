@@ -1,0 +1,22 @@
+#pragma kernel Main
+
+struct GrassBlade
+{
+    float3 position;
+};
+
+AppendStructuredBuffer<GrassBlade> _GrassBlades;
+uint _Resolution;
+float _GrassSpacing;
+
+[numthreads(8, 8, 1)]
+void Main(int3 id : SV_DispatchThreadID)
+{
+    if (id.x < _Resolution && id.y < _Resolution)
+    {
+        float3 position = float3(id.x, 0, id.y) * _GrassSpacing;
+        GrassBlade blade;
+        blade.position = position;
+        _GrassBlades.Append(blade);
+    }
+}
