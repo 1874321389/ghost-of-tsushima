@@ -24,23 +24,23 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _GrassAlbedo:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
+        m_Texture: {fileID: 2800000, guid: 4aef10460f282ac4cb985f8b50fa54f3, type: 3}
+        m_Scale: {x: 4, y: 1}
+        m_Offset: {x: 0.52, y: 0}
     - _GrassGloss:
-        m_Texture: {fileID: 0}
+        m_Texture: {fileID: 2800000, guid: 4aef10460f282ac4cb985f8b50fa54f3, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _BladeWidth: 0.06
-    - _CurvedNormalAmount: 2.09
+    - _CurvedNormalAmount: 13.07
     - _Height: 1
     - _TaperAmount: 0.93
-    - _Tilt: 0.9
-    - _p1Offset: 0.52
-    - _p2Offset: 0.35
+    - _Tilt: 0.999
+    - _p1Offset: 0.04
+    - _p2Offset: 0.12
     m_Colors:
-    - _BottomColor: {r: 0.24290608, g: 0.6886792, b: 0.21115166, a: 1}
-    - _TopColor: {r: 0.7794717, g: 1, b: 0.15566039, a: 1}
+    - _BottomColor: {r: 0.058244057, g: 0.21698111, b: 0, a: 1}
+    - _TopColor: {r: 0.8490566, g: 0.7814224, b: 0.22828408, a: 1}
   m_BuildTextureStacks: []
