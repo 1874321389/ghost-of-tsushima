@@ -38,7 +38,7 @@ Material:
     - _Height: 1
     - _TaperAmount: 0.93
     - _Tilt: 0.999
-    - _p1Offset: 0.04
+    - _p1Offset: 0.13
     - _p2Offset: 0.12
     m_Colors:
     - _BottomColor: {r: 0.058244057, g: 0.21698111, b: 0, a: 1}

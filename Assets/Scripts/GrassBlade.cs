@@ -2,10 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Tutorial201
+namespace Tutorial303
 {
     //在编辑器显示
-    [ExecuteInEditMode]
+    //[ExecuteInEditMode]
     public class GrassBlade : MonoBehaviour
     {
         public Material material;

@@ -1,4 +1,4 @@
-Shader "Tutorial204/BezierBlade"
+Shader "Tutorial303/BezierBlade"
 {
     Properties
     {
@@ -26,7 +26,7 @@ Shader "Tutorial204/BezierBlade"
             Name "Simple Grass Blade"
             Tags { "LightMode" = "UniversalForward" }
 
-            Cull Back
+            Cull Off
 
             HLSLPROGRAM
             // Required to compile gles3.0 on some platforms
@@ -46,6 +46,16 @@ Shader "Tutorial204/BezierBlade"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "CubicBezier.hlsl"
+
+            struct GrassBlade {
+                float3 position;
+            };
+
+            StructuredBuffer<GrassBlade> _GrassBlades;
+            StructuredBuffer<int> Triangles;
+            StructuredBuffer<float4> Colors;
+            StructuredBuffer<float2> UVs;
+
 
             float _Height;
             float _Tilt;
@@ -69,9 +79,8 @@ Shader "Tutorial204/BezierBlade"
 
             struct Attributes
             {
-                float4 positionOS : POSITION;
-                float4 color : COLOR;
-                float2 texcoord : TEXCOORD0;
+                uint vertexID : SV_VertexID;
+                uint instanceID : SV_InstanceID;
             };
 
             struct Varyings
@@ -118,12 +127,19 @@ Shader "Tutorial204/BezierBlade"
                 float3 p1 = float3(0,0,0);
                 float3 p2 = float3(0,0,0);
                 GetP1P2(p0, p3, p1, p2);
-                float t = IN.color.r;
+
+                int positionIndex = Triangles[IN.vertexID];
+                float4 vertColor = Colors[positionIndex];
+                float2 uv = UVs[positionIndex];
+                GrassBlade blade = _GrassBlades[IN.instanceID];
+
+
+                float t = vertColor.r;
                 float3 centerPos = CubicBezier(p0, p1, p2, p3, t);
                 float width = _BladeWidth * (1 - _TaperAmount * t);
-                float side = IN.color.g * 2 - 1;
-                float3 vertexPos = centerPos + float3(0, 0, side * width);
-                OUT.positionCS = TransformObjectToHClip(vertexPos);
+                float side = vertColor.g * 2 - 1;
+                float3 worldPos = blade.position + centerPos + float3(0, 0, side * width);
+                //OUT.positionCS = TransformObjectToHClip(vertexPos);
 
                 //切线、法线
                 float3 tangent = CubicBezierTangent(p0, p1, p2, p3, t);
@@ -133,11 +149,11 @@ Shader "Tutorial204/BezierBlade"
                 curvedNorm.z += side * _CurvedNormalAmount;
                 curvedNorm = normalize(curvedNorm);
                 //转换到世界空间
-                OUT.originalNorm = TransformObjectToWorldNormal(normal);
-                OUT.curvedNorm = TransformObjectToWorldNormal(curvedNorm);
-                OUT.positionWS = TransformObjectToWorld(vertexPos);
-                OUT.positionWS = TransformObjectToWorld(vertexPos);
-                OUT.uv = IN.texcoord;
+                OUT.positionCS = TransformObjectToHClip(worldPos);
+                OUT.curvedNorm = curvedNorm;
+                OUT.originalNorm = normal;
+                OUT.positionWS = worldPos;
+                OUT.uv = uv;
                 OUT.t = t;
 
                 return OUT;

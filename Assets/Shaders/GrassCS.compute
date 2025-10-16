@@ -5,16 +5,28 @@ struct GrassBlade
     float3 position;
 };
 
-AppendStructuredBuffer<GrassBlade> _GrassBlades;
+AppendStructuredBuffer<GrassBlade> _GrassBlades; //可追加的结构化缓冲（UAV）
 uint _Resolution;
 float _GrassSpacing;
+float _JitterStrength;
 
-[numthreads(8, 8, 1)]
+float2 HashFloat2(float2 p)
+{
+    float t = dot(p, float2(12.9898, 78.233));
+    float2 q = float2(t, t * 1.61803398875);
+    return frac(sin(q) * 43758.5453);
+}
+
+[numthreads(8, 8, 1)]  //每个线程组有 8×8=64 个线程。
 void Main(int3 id : SV_DispatchThreadID)
 {
     if (id.x < _Resolution && id.y < _Resolution)
     {
         float3 position = float3(id.x, 0, id.y) * _GrassSpacing;
+        float2 hash = HashFloat2(id.xy);
+        float2 jitter = ((hash * 2) - 1) * _JitterStrength;
+        position.xz += jitter;
+
         GrassBlade blade;
         blade.position = position;
         _GrassBlades.Append(blade);
