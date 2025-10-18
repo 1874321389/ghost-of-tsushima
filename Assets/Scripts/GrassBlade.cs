@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Tutorial303
+namespace Tutorial404
 {
     //在编辑器显示
     //[ExecuteInEditMode]
