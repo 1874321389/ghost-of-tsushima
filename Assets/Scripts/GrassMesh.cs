@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Tutorial404
+namespace Tutorial303
 {
     public class GrassMesh
     {

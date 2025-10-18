@@ -1,8 +1,11 @@
-Shader "Tutorial405/BezierBlade"
+Shader "Tutorial303/BezierBlade"
 {
     Properties
     {
         [Header(Shape)]
+        _Height ("Height", Float) = 1
+        _Tilt ("Tilt", Float) = 0.9
+        _BladeWidth ("BladeWidth", Float) = 0.1
         _TaperAmount ("Taper Amount", Float) = 0
         _CurvedNormalAmount ("Curved Normal Amount", Range(0, 20)) = 1
         _p1Offset ("p1Offset", Float) = 1
@@ -44,18 +47,8 @@ Shader "Tutorial405/BezierBlade"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "CubicBezier.hlsl"
 
-            struct GrassBlade
-            {
+            struct GrassBlade {
                 float3 position;
-                float rotAngle;
-                float hash;
-                float height;
-                float width;
-                float tilt;
-                float bend;
-                float3 surfaceNorm;
-                float windForce;
-                float sideBend;
             };
 
             StructuredBuffer<GrassBlade> _GrassBlades;
@@ -64,6 +57,9 @@ Shader "Tutorial405/BezierBlade"
             StructuredBuffer<float2> UVs;
 
 
+            float _Height;
+            float _Tilt;
+            float _BladeWidth;
             float _TaperAmount;
             float _CurvedNormalAmount;
             float _p1Offset;
@@ -109,124 +105,57 @@ Shader "Tutorial405/BezierBlade"
                 return float3(-p3x, p3y, 0);
             }
 
-            void GetP1P2(float3 p0, float3 p3, float bend, out float3 p1, out float3 p2)
+            void GetP1P2(float3 p0, float3 p3, out float3 p1, out float3 p2)
             {
                 p1 = lerp(p0, p3, 0.33);
                 p2 = lerp(p0, p3, 0.66);
-            
+
                 float3 bladeDir = normalize(p3 - p0);
                 float3 bezCtrlOffsetDir = normalize(cross(bladeDir, float3(0,0,1)));
-            
-                p1 += bezCtrlOffsetDir * bend * _p1Offset;
-                p2 += bezCtrlOffsetDir * bend * _p2Offset;
-            }
 
-            float3x3 RotAxis3x3(float angle, float3 axis)
-            {
-                axis = normalize(axis);
-
-                float s, c;
-                sincos(angle, s, c);
-
-                // 1 - cos(angle)
-                float t = 1.0 - c;
-
-                // 轴的分量
-                float x = axis.x;
-                float y = axis.y;
-                float z = axis.z;
-
-                float xy = x * y;
-                float xz = x * z;
-                float yz = y * z;
-                float xs = x * s;
-                float ys = y * s;
-                float zs = z * s;
-
-                float m00 = t * x * x + c;
-                float m01 = t * xy - zs;
-                float m02 = t * xz + ys;
-
-                float m10 = t * xy + zs;
-                float m11 = t * y * y + c;
-                float m12 = t * yz - xs;
-
-                float m20 = t * xz - ys;
-                float m21 = t * yz + xs;
-                float m22 = t * z * z + c;
-
-                return float3x3(
-                    m00, m01, m02,
-                    m10, m11, m12,
-                    m20, m21, m22
-                );
+                p1 += bezCtrlOffsetDir * _p1Offset;
+                p2 += bezCtrlOffsetDir * _p2Offset;
             }
 
             Varyings vert(Attributes IN)
             {
                 Varyings OUT;
-            
-                // 获取草叶实例数据
-                GrassBlade blade = _GrassBlades[IN.instanceID];
-                float bend = blade.bend;
-                float height = blade.height;
-                float tilt = blade.tilt;
-            
-                // 计算贝塞尔曲线控制点
+
+                //顶点计算
                 float3 p0 = GetP0();
-                float3 p3 = GetP3(height, tilt);
+                float3 p3 = GetP3(_Height, _Tilt);
                 float3 p1 = float3(0,0,0);
                 float3 p2 = float3(0,0,0);
-                GetP1P2(p0, p3, bend, p1, p2);
-            
-                // 从网格数据中获取顶点属性
+                GetP1P2(p0, p3, p1, p2);
+
                 int positionIndex = Triangles[IN.vertexID];
                 float4 vertColor = Colors[positionIndex];
                 float2 uv = UVs[positionIndex];
-            
-                // 贝塞尔曲线插值计算草叶中心位置
+                GrassBlade blade = _GrassBlades[IN.instanceID];
+
+
                 float t = vertColor.r;
                 float3 centerPos = CubicBezier(p0, p1, p2, p3, t);
-            
-                // 计算草叶宽度、方向等属性
-                float width = blade.width * (1 - _TaperAmount * t);
+                float width = _BladeWidth * (1 - _TaperAmount * t);
                 float side = vertColor.g * 2 - 1;
-                float3 position = centerPos + float3(0, 0, side * width);
-            
-                // 计算切线和法线
+                float3 worldPos = blade.position + centerPos + float3(0, 0, side * width);
+                //OUT.positionCS = TransformObjectToHClip(vertexPos);
+
+                //切线、法线
                 float3 tangent = CubicBezierTangent(p0, p1, p2, p3, t);
                 float3 normal = normalize(cross(tangent, float3(0,0,1)));
-            
-                // 处理草叶弯曲和旋转
+                //矫正法线
                 float3 curvedNorm = normal;
                 curvedNorm.z += side * _CurvedNormalAmount;
                 curvedNorm = normalize(curvedNorm);
-            
-                float angle = blade.rotAngle;
-                float sideBend = blade.sideBend;
-            
-                float3x3 rotMat = RotAxis3x3(-angle, float3(0,1,0));
-                float3x3 sideRot = RotAxis3x3(sideBend, normalize(tangent));
-            
-                position = position - centerPos;
-                normal = mul(sideRot, normal);
-                curvedNorm = mul(sideRot, curvedNorm);
-                position = mul(sideRot, position);
-                position = position + centerPos;
-            
-                normal = mul(rotMat, normal);
-                curvedNorm = mul(rotMat, curvedNorm);
-                position = mul(rotMat, position);
-                position += blade.position;
-            
-                // 输出顶点数据
-                OUT.positionCS = TransformWorldToHClip(position);
+                //转换到世界空间
+                OUT.positionCS = TransformObjectToHClip(worldPos);
                 OUT.curvedNorm = curvedNorm;
                 OUT.originalNorm = normal;
-                OUT.positionWS = position;
+                OUT.positionWS = worldPos;
                 OUT.uv = uv;
                 OUT.t = t;
-            
+
                 return OUT;
             }
 
