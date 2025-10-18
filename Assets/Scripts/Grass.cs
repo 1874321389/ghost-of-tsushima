@@ -9,18 +9,24 @@ namespace Tutorial404
     public class Grass : MonoBehaviour
     {
         [Header("Core Settings")]
-        [SerializeField] private ComputeShader computeShader;
-        [SerializeField] private Material material;
+        [SerializeField] 
+        private ComputeShader computeShader;
+        [SerializeField] 
+        private Material material;
         public Camera cam;
+
         public float grassSpacing = 0.1f;
         public int resolution = 100;
-        [SerializeField, Range(0, 2)] public float jitterStrength;
+
+        [SerializeField, Range(0, 2)] 
+        public float jitterStrength;
         public Terrain terrain;
 
         [Header("Culling")]
         public float distanceCullStartDistance;
         public float distanceCullEndDistance;
-        [Range(0, 1)] public float distanceCullMinimumGrassAmount;
+        [Range(0, 1)] 
+        public float distanceCullMinimumGrassAmount;
         public float frustumCullNearOffset;
         public float frustumCullEdgeOffset;
 
@@ -31,7 +37,6 @@ namespace Tutorial404
         public float clumpScale;
         public List<ClumpParameters> clumpParameters;
 
-        // 提前把 Shader 属性名（字符串）转换为整型 ID
         private static readonly int
             grassBladesBufferID = Shader.PropertyToID("_GrassBlades"),
             resolutionID = Shader.PropertyToID("_Resolution"),
@@ -56,7 +61,6 @@ namespace Tutorial404
 
         private ComputeBuffer grassBladesBuffer; //生成的草实例位置
         private ComputeBuffer meshTrianglesBuffer; //Grass 网格的三角形索引
-        private ComputeBuffer meshPositionsBuffer; //小草模型的顶点坐标
         private ComputeBuffer meshColorsBuffer; //顶点颜色
         private ComputeBuffer meshUVsBuffer;
         private ComputeBuffer argsBuffer; //用于 DrawProceduralIndirect() 的核心参数缓存
@@ -73,13 +77,20 @@ namespace Tutorial404
             bounds = new Bounds(Vector3.zero, Vector3.one * 10000f);
         }
 
+
         void Start()
         {
+
         }
 
         void Update()
         {
             UpdateGpuParameters();
+        }
+
+        void LateUpdate()
+        {
+            RenderGrass();
         }
 
         void OnDestroy()
@@ -99,10 +110,11 @@ namespace Tutorial404
         {
             grassBladesBuffer = new ComputeBuffer(resolution * resolution, sizeof(float) * 14, ComputeBufferType.Append);
             grassBladesBuffer.SetCounterValue(0);
+            
             argsBuffer = new ComputeBuffer(1, ARGS_STRIDE, ComputeBufferType.IndirectArguments);
+
             clumpParametersBuffer = new ComputeBuffer(clumpParameters.Count, sizeof(float) * 10);
             UpdateClumpParametersBuffer();
-
         }
 
         private void SetupMeshBuffers()
@@ -124,22 +136,18 @@ namespace Tutorial404
         private void CreateComputeBuffersForMesh()
         {
             int[] triangles = clonedMesh.triangles;
-            Vector3[] positions = clonedMesh.vertices;
             Color[] colors = clonedMesh.colors;
             Vector2[] uvs = clonedMesh.uv;
 
             meshTrianglesBuffer = CreateBuffer<int>(triangles, sizeof(int));
-            meshPositionsBuffer = CreateBuffer<Vector3>(positions, sizeof(float) * 3);
             meshColorsBuffer = CreateBuffer<Color>(colors, sizeof(float) * 4);
             meshUVsBuffer = CreateBuffer<Vector2>(uvs, sizeof(float) * 2);
 
             material.SetBuffer("Triangles", meshTrianglesBuffer);
-            material.SetBuffer("Positions", meshPositionsBuffer);
             material.SetBuffer("Colors", meshColorsBuffer);
             material.SetBuffer("UVs", meshUVsBuffer);
             material.SetBuffer(grassBladesBufferID, grassBladesBuffer);
         }
-
         private void CreateClumpTexture()
         {
             clumpingVoronoiMaterial.SetFloat("_NumClumpTypes", clumpParameters.Count);
@@ -168,7 +176,6 @@ namespace Tutorial404
 
             RenderGrass();
         }
-
         private void UpdateClumpParametersBuffer()
         {
             if (clumpParameters.Count > 0)
@@ -184,12 +191,6 @@ namespace Tutorial404
 
         private void SetupComputeShader()
         {
-            if (computeShader == null)
-            {
-                Debug.LogError("ComputeShader is null!");
-                return;
-            }
-
             computeShader.SetInt(resolutionID, resolution);
             computeShader.SetBuffer(0, grassBladesBufferID, grassBladesBuffer);
             computeShader.SetFloat(grassSpacingID, grassSpacing);
@@ -203,6 +204,7 @@ namespace Tutorial404
                 {
                     computeShader.SetTexture(0, detailMapID, terrain.terrainData.alphamapTextures[0]);
                 }
+
                 computeShader.SetFloat(heightMapScaleID, terrain.terrainData.size.x);
                 computeShader.SetFloat(heightMapMultiplierID, terrain.terrainData.size.y);
             }
@@ -213,46 +215,29 @@ namespace Tutorial404
             computeShader.SetFloat(frustumCullNearOffsetID, frustumCullNearOffset);
             computeShader.SetFloat(frustumCullEdgeOffsetID, frustumCullEdgeOffset);
 
-            if (cam != null)
-            {
-                computeShader.SetVector(worldSpaceCameraPositionID, cam.transform.position);
+            computeShader.SetVector(worldSpaceCameraPositionID, cam.transform.position);
 
-                Matrix4x4 projectionMatrix = GL.GetGPUProjectionMatrix(cam.projectionMatrix, false);
-                Matrix4x4 viewProjectionMatrix = projectionMatrix * cam.worldToCameraMatrix;
-                computeShader.SetMatrix(vpMatrixID, viewProjectionMatrix);
-            }
+            Matrix4x4 projectionMatrix = GL.GetGPUProjectionMatrix(cam.projectionMatrix, false);
+            Matrix4x4 viewProjectionMatrix = projectionMatrix * cam.worldToCameraMatrix;
+            computeShader.SetMatrix(vpMatrixID, viewProjectionMatrix);
 
             UpdateClumpParametersBuffer();
-            if (clumpParametersBuffer != null)
-            {
-                computeShader.SetBuffer(0, clumpParametersID, clumpParametersBuffer);
-            }
+            computeShader.SetBuffer(0, clumpParametersID, clumpParametersBuffer);
             computeShader.SetFloat(numClumpParametersID, clumpParameters.Count);
-            
-            if (clumpTexture != null)
-            {
-                computeShader.SetTexture(0, clumpTexID, clumpTexture);
-            }
-            else
-            {
-                Debug.LogError("clumpTexture is null!");
-            }
+            computeShader.SetTexture(0, clumpTexID, clumpTexture);
             computeShader.SetFloat(clumpScaleID, clumpScale);
         }
 
         private void RenderGrass()
         {
             ComputeBuffer.CopyCount(grassBladesBuffer, argsBuffer, sizeof(int));
-
             Graphics.DrawProceduralIndirect(material, bounds, MeshTopology.Triangles, argsBuffer,
                 0, cam, null, UnityEngine.Rendering.ShadowCastingMode.Off, true, gameObject.layer);
         }
-
         private void DisposeBuffers()
         {
             DisposeBuffer(grassBladesBuffer);
             DisposeBuffer(meshTrianglesBuffer);
-            DisposeBuffer(meshPositionsBuffer);
             DisposeBuffer(meshColorsBuffer);
             DisposeBuffer(meshUVsBuffer);
             DisposeBuffer(argsBuffer);

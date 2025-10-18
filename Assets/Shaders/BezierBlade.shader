@@ -44,6 +44,8 @@ Shader "Tutorial405/BezierBlade"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "CubicBezier.hlsl"
 
+
+
             struct GrassBlade
             {
                 float3 position;
@@ -238,10 +240,12 @@ Shader "Tutorial405/BezierBlade"
                 //return half4(n, 1);
                 Light mainLight = GetMainLight(TransformWorldToShadowCoord(i.positionWS));
                 float3 v = normalize(GetCameraPositionWS() - i.positionWS);
+                float nl = dot(n, mainLight.direction);
+                //return half4(nl, nl, nl, 1);
 
                 float2 uvAlbedo = i.uv * _GrassAlbedo_ST.xy + _GrassAlbedo_ST.zw;
                 float3 grassAlbedo = saturate(SAMPLE_TEXTURE2D(_GrassAlbedo, sampler_GrassAlbedo, uvAlbedo));
-
+                //return half4(grassAlbedo, 1);
 
                 float4 grassCol = lerp(_BottomColor, _TopColor, i.t);
 
@@ -257,10 +261,16 @@ Shader "Tutorial405/BezierBlade"
                 BRDFData brdfData;
                 half alpha = 1;
 
-                InitializeBRDFData(albedo, 0, half3(1, 1, 1), gloss, alpha, brdfData);
+                float3 N = normalize(n);
+                float3 L = normalize(mainLight.direction);
+                float3 V = normalize(v);
+
+                InitializeBRDFData(albedo, 0, half3(0.04, 0.04, 0.04), 0, alpha, brdfData);
                 float3 directBRDF = DirectBRDF(brdfData, n, mainLight.direction, v) * mainLight.color;
+                return half4(DirectBRDF(brdfData, N, L, V), 1);
                 // Final color calculation
                 float3 finalColor = GI * albedo + directBRDF * (mainLight.shadowAttenuation * mainLight.distanceAttenuation);
+                //return half4(finalColor, 1);
                 float4 col;
                 col = float4(finalColor, grassCol.a); // Alpha from grassCol
 

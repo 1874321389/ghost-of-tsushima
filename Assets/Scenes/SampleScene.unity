@@ -20,7 +20,7 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
+  m_AmbientSkyColor: {r: 0, g: 0, b: 0, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
   m_AmbientIntensity: 1
@@ -208,8 +208,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.5147804, y: -0, z: -0, w: 0.8573221}
-  m_LocalPosition: {x: 0, y: 6.33, z: -4.78}
+  m_LocalRotation: {x: 0.0026896298, y: 0.0050968844, z: 0.000046988484, w: -0.99998343}
+  m_LocalPosition: {x: 9.498198, y: 1.5037866, z: -0.5104399}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -239,7 +239,7 @@ MonoBehaviour:
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
   m_RenderPostProcessing: 1
-  m_Antialiasing: 0
+  m_Antialiasing: 3
   m_AntialiasingQuality: 2
   m_StopNaN: 0
   m_Dithering: 0
@@ -426,7 +426,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &437224164
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -843,11 +843,42 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   computeShader: {fileID: 7200000, guid: 25baa38dd6440094786f439371422b04, type: 3}
   material: {fileID: 2100000, guid: c22261d2eb75746ff95c19103e4d1e73, type: 2}
-  cam: {fileID: 0}
-  grassSpacing: 0.1
-  resolution: 100
+  cam: {fileID: 330585545}
+  grassSpacing: 0.125
+  resolution: 200
   jitterStrength: 0
   terrain: {fileID: 2051170131}
+  distanceCullStartDistance: 0
+  distanceCullEndDistance: 60
+  distanceCullMinimumGrassAmount: 0.256
+  frustumCullNearOffset: -3
+  frustumCullEdgeOffset: -1
+  clumpTextureWidth: 512
+  clumpTextureHeight: 512
+  clumpingVoronoiMaterial: {fileID: 2100000, guid: 13f81550ed77f3045a10880ca0a36cd7,
+    type: 2}
+  clumpScale: 0.2
+  clumpParameters:
+  - pullToCentre: 0.2
+    pointInSameDirection: 0.5
+    baseHeight: 2
+    heightRandom: 0.2
+    baseWidth: 0.02
+    widthRandom: 0.01
+    baseTilt: 0.9
+    tiltRandom: 0.02
+    baseBend: 1.5
+    bendRandom: 0.05
+  - pullToCentre: 0.2
+    pointInSameDirection: 0.4
+    baseHeight: 2
+    heightRandom: 0.2
+    baseWidth: 0.03
+    widthRandom: 0.01
+    baseTilt: 0.86
+    tiltRandom: 0.02
+    baseBend: 1
+    bendRandom: 0.05
 --- !u!4 &1728589013
 Transform:
   m_ObjectHideFlags: 0
@@ -985,7 +1016,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1829928156
 MonoBehaviour:
   m_ObjectHideFlags: 0

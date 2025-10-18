@@ -25,7 +25,7 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _NumClumpTypes: 4
-    - _NumClumps: 30
+    - _NumClumpTypes: 2
+    - _NumClumps: 20.2
     m_Colors: []
   m_BuildTextureStacks: []

@@ -1,4 +1,5 @@
 #pragma kernel Main
+
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 
 struct GrassBlade
@@ -32,6 +33,7 @@ struct ClumpParameters
 StructuredBuffer<ClumpParameters> _ClumpParameters;
 
 AppendStructuredBuffer<GrassBlade> _GrassBlades; //可追加的结构化缓冲（UAV）
+
 uint _Resolution;
 float _GrassSpacing;
 float _JitterStrength;
@@ -40,22 +42,27 @@ float _JitterStrength;
 Texture2D<float4> _HeightMap;
 Texture2D<float4> _DetailMap;
 SamplerState LinearClampSampler;
+
 Texture2D<float4> _ClumpTex;
-SamplerState samplerClumpTex;
+SamplerState sampler_ClumpTex;
+
 float3 _TerrainPosition;
 float _HeightMapScale;
 float _HeightMapMultiplier;
+
 float3 _WSpaceCameraPos;
 float _DistanceCullStartDist;
 float _DistanceCullEndDist;
 float _DistanceCullMinimumGrassAmount;
+
 float4x4 _VP_MATRIX;
 float _FrustumCullNearOffset;
 float _FrustumCullEdgeOffset;
+
 float _ClumpScale;
 float _NumClumpParameters;
 
-//随机抖动
+
 float2 HashFloat2(float2 p)
 {
     float t = dot(p, float2(12.9898, 78.233));
@@ -73,11 +80,16 @@ float Remap(float t)
     return (t * 2) - 1;
 }
 
-
 float SampleHeight(float2 normalizedPos)
 {
     float height = UnpackHeightmap(_HeightMap.SampleLevel(LinearClampSampler, normalizedPos, 0));
     return height * _HeightMapMultiplier * 2;
+}
+
+float3 FitTerrainPosition(float3 position)
+{
+    float2 normalizedPos = (position.xz - _TerrainPosition.xz) / _HeightMapScale;
+    return float3(position.x, _TerrainPosition.y + SampleHeight(normalizedPos), position.z);
 }
 
 float SampleGrass(float2 normalizedPos)
@@ -85,7 +97,6 @@ float SampleGrass(float2 normalizedPos)
     float value = _DetailMap.SampleLevel(LinearClampSampler, normalizedPos, 0).r;
     return value;
 }
-
 
 uint DistanceCull(float3 worldPos, float hash)
 {
@@ -98,6 +109,7 @@ uint DistanceCull(float3 worldPos, float hash)
 uint FrustumCull(float3 worldPos)
 {
     float4 clipPos = mul(_VP_MATRIX, float4(worldPos, 1));
+
     return (clipPos.z > clipPos.w
         || clipPos.z < 0
         || clipPos.x < -clipPos.w + _FrustumCullEdgeOffset
@@ -106,16 +118,8 @@ uint FrustumCull(float3 worldPos)
         || clipPos.y > clipPos.w)
         ? 0 : 1;
 }
-
-float3 FitTerrainPosition(float3 position)
-{
-    float2 normalizedPos = (position.xz - _TerrainPosition.xz) / _HeightMapScale;
-    return float3(position.x, _TerrainPosition.y + SampleHeight(normalizedPos), position.z);
-}
-
-
 [numthreads(8, 8, 1)]  //每个线程组有 8×8=64 个线程。
-void Main(int3 id : SV_DispatchThreadID)
+void Main(uint3 id : SV_DispatchThreadID)
 {
     if (id.x < _Resolution && id.y < _Resolution)
     {
@@ -125,7 +129,8 @@ void Main(int3 id : SV_DispatchThreadID)
         position.xz += jitter;
 
         float2 clumpUV = position.xz * float2(_ClumpScale.xx);
-        float3 clumpData = _ClumpTex.SampleLevel(samplerClumpTex, clumpUV, 0).xyz;
+        float3 clumpData = _ClumpTex.SampleLevel(sampler_ClumpTex, clumpUV, 0).xyz;
+
         float clumpParamsIndex = clumpData.x;
         ClumpParameters bladeParameters = _ClumpParameters[(int)clumpParamsIndex];
 
@@ -135,9 +140,11 @@ void Main(int3 id : SV_DispatchThreadID)
 
         float2 normalizedPos = (position.xz - _TerrainPosition.xz) / _HeightMapScale;
         if (SampleGrass(normalizedPos) < 0.5) return;
+
         position.y = _TerrainPosition.y + SampleHeight(normalizedPos);
 
         float3 posToCam = normalize(_WSpaceCameraPos - position);
+
         float3 bitangent = float3(1, 0, 0);
         float3 tangent = float3(0, 0, 1);
 
@@ -148,6 +155,7 @@ void Main(int3 id : SV_DispatchThreadID)
         float3 norm = normalize(cross(newTangent, newBitangent));
 
         uint distanceCull = DistanceCull(position, hash.x);
+
         uint frustumCull = FrustumCull(position);
 
         if (distanceCull == 1 && frustumCull == 1)
@@ -172,14 +180,18 @@ void Main(int3 id : SV_DispatchThreadID)
 
             blade.rotAngle = combinedFacingAngle;
             blade.hash = Rand(id.xyx);
+
             blade.height = baseHeight + Remap(Rand(id.xyx)) * heightRandom;
             blade.width = baseWidth + Remap(Rand(id.yxx)) * widthRandom;
+
             blade.tilt = baseTilt + Remap(Rand(id.xyx * float3(1.12, 3.3, 17.6))) * tiltRandom;
             blade.bend = baseBend + Remap(Rand(id.xyy * float3(12.32, 0.23, 3.39))) * bendRandom;
+
             blade.surfaceNorm = norm;
 
             float viewAlignment = abs(dot(bladeFacing, normalize(posToCam.xz)));
             float sideBend = smoothstep(0.3, 0, viewAlignment) * 1.5;
+
             blade.sideBend = sideBend;
             blade.windForce = 0;
 
